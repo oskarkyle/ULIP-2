@@ -1,0 +1,52 @@
+ULIP-2 on ISAAC (company-gpu) - core environment verified; all official weights downloaded and verified
+Storage: /media/robosense/DataCenterNew/Kyle/ULIP-2
+Container mount: /workspace/ULIP-2
+Existing base image: nvcr.io/nvidia/pytorch:22.06-py3
+Python 3.8, PyTorch 1.13.0a0+340c412, torchvision 0.13.0a0, CUDA toolkit 11.7.
+This is a compatible runtime adapted to the existing image, not the README's exact legacy environment.
+New dependencies live in env/ulip (system-site-packages venv); base image is unchanged.
+Caches and temp files live in cache/. Docker's base image remains on the system disk.
+
+Source: https://github.com/salesforce/ULIP (main archive downloaded 2026-10-19)
+Local compatibility changes:
+1. timm 0.9.16 instead of README 0.4.12 to satisfy open-clip-torch 2.24.0.
+2. PointNet2 extension: honor TORCH_CUDA_ARCH_LIST=8.6 instead of forcing legacy GPU architectures.
+3. pointbert/dvae.py: lazy-import knn_cuda only in DGCNN.get_graph_feature.
+   The used Point-BERT Group already uses pure PyTorch knn_point; this path is unchanged.
+   The optional DGCNN path still requires knn_cuda if used in future.
+4. ULIP_models.py: optional ULIP_OPENCLIP_CHECKPOINT environment variable replaces online
+   pretrained tag with local, checksum-verified weights from the same official model.
+Model topology, point grouping and evaluation preprocessing are unchanged.
+
+Remote host can reach PyPI / download.pytorch.org; GitHub/Hugging Face fail direct access.
+Download official source and weights on local machine using its existing proxy, directly to shared NFS.
+Network paths are identical on local machine and ISAAC.
+
+Run on ISAAC:
+bash /media/robosense/DataCenterNew/Kyle/ULIP-2/setup/container.sh /workspace/ULIP-2/setup/evaluate_modelnet40.sh
+Check outputs/install.log, outputs/build-smoke.log, outputs/modelnet40-eval-final.log for results.
+
+System libraries: downloaded Ubuntu focal packages into cache/apt/debs and extracted
+into env/sysroot; launcher sets LD_LIBRARY_PATH. No host package changes.
+Pinned protobuf 3.19.6, dash 2.18.2, plotly 5.24.1, pydantic 1.8.2 for base-image compatibility.
+Verification: pip check reports no broken requirements; main.py --help succeeds.
+PointNet2 compiled for sm_86; official Point-BERT checkpoint strict load passes.
+GPU forward for batch 2 x 10000 x 6 produces 2 x 1280 embedding.
+
+Base image digest: nvcr.io/nvidia/pytorch@sha256:6f9a1fdfcbc1d1aa6f28791ed7dc41d651d7c47d634c6a11b4f0692c50c8a664
+OpenCLIP file size: 10158638769 bytes.
+OpenCLIP SHA256: 0d5318839ad03607c48055c45897c655a14c0276a79f6b867934ddd073760e39
+Point-BERT SHA256: a4b5ed9799d5841a1646e0fb7d24cb8dcdd3b3e6fab2e2575de2531f71274adb
+Weights came from official Hugging Face via local proxy plus server-accessible hf-mirror;
+full OpenCLIP SHA256 matches official Hugging Face metadata. Temporary chunks removed.
+
+GPU selection: launcher defaults to GPU 0 because GPU 1 is occupied by existing ComfyUI.
+Override on ISAAC with ULIP_GPU=1 bash setup/container.sh ... when that GPU is available.
+Runtime evaluation TMPDIR=/tmp is a 256MB container tmpfs to avoid NFS multiprocessing
+socket cleanup errors. Persistent environment/data/weights/caches stay on shared storage.
+Initial full ModelNet40 result (2468 samples, batch size 8, seed default 0):
+Top-1 84.11669367909238%, Top-5 97.28525121555916%.
+This validates the installation; it does not yet reproduce the paper's 84.7% Top-1 exactly.
+
+Final verification: second full evaluation exited 0, no tracebacks, identical Top-1/Top-5.
+See outputs/modelnet40-eval-final.log and outputs/installation-result.json.

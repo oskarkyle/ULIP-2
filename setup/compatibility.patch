@@ -1,0 +1,32 @@
+--- a/models/ULIP_models.py
++++ b/models/ULIP_models.py
+@@ -352,7 +352,7 @@
+ def ULIP2_PointBERT_Colored(args):
+     print("Get openclip model:")
+     open_clip_model, _, preprocess = open_clip.create_model_and_transforms('ViT-bigG-14',
+-                                                                          pretrained='laion2b_s39b_b160k')
++                                                                          pretrained=os.environ.get('ULIP_OPENCLIP_CHECKPOINT', 'laion2b_s39b_b160k'))
+     open_clip_model.eval()
+     print("Finished loading the openclip model.")
+ 
+--- a/models/pointbert/dvae.py
++++ b/models/pointbert/dvae.py
+@@ -3,9 +3,6 @@
+ import torch.nn.functional as F
+ from models.pointbert import misc
+ 
+-from knn_cuda import KNN
+-
+-knn = KNN(k=4, transpose_mode=False)
+ 
+ 
+ class DGCNN(nn.Module):
+@@ -45,6 +42,8 @@
+     def get_graph_feature(coor_q, x_q, coor_k, x_k):
+         # coor: bs, 3, np, x: bs, c, np
+ 
++        from knn_cuda import KNN
++        knn = KNN(k=4, transpose_mode=False)
+         k = 4
+         batch_size = x_k.size(0)
+         num_points_k = x_k.size(2)

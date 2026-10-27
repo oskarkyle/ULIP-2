@@ -1,0 +1,6 @@
+{
+  "url": "https://codeload.github.com/salesforce/ULIP/tar.gz/refs/heads/main",
+  "download_date": "2026-10-19",
+  "archive_sha256": "d8b40e85059b691c5ddfee886e1485ab5b1ef933f9b0505303636333f707bdf7",
+  "local_patches": "compatibility.patch"
+}
